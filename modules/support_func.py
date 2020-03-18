@@ -5,6 +5,7 @@ Support functions for chess engine
 @author: fmalgarini
 """
 import random
+import glob
 import numpy as np
 from modules.legal_moves import *
 
@@ -21,7 +22,12 @@ def read_settings():
     except:
         print("Warning: check syntax of settings file when defining depth")
 
-    return depth
+    try:
+        load = data[1][-2:-1]
+    except:
+        print("Warning: check syntax of settings file when defining load")
+
+    return depth, load
 
 def initialize_starting_position():
 
@@ -46,6 +52,20 @@ def initialize_starting_position():
     starting_position[7][2], starting_position[7][5] = "w,b", "w,b"
     starting_position[7][3] = "w,q"
     starting_position[7][4] = "w,K"
+
+    return starting_position
+
+def load_starting_position(game_num):
+
+    with open("./saved_games/game{0}.txt".format(game_num), 'r') as f:
+        data = f.read()
+
+    data = data.splitlines()
+
+    starting_position = np.chararray((8, 8), unicode = True, itemsize = 3)
+    for i in range(0,8):
+        for j in range(0,8):
+            starting_position[i][j] = data[i][6*j+3:6*j+6]
 
     return starting_position
 
@@ -191,3 +211,12 @@ def compute_legal_moves(position, colour, recall):
 def is_in_check(position, colour):
 
     possible_moves = compute_legal_moves(position,colour)
+
+def save_position(position):
+
+    files_present = glob.glob("./saved_games/*.txt")
+    x = len(files_present) + 1
+
+    if x<100:
+        with open("./saved_games/game{0}.txt".format(x), "w+") as f:
+            f.writelines(str(position) + '\n')
