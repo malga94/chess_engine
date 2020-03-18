@@ -49,30 +49,22 @@ def player_turn(position):
     position = updatepos(position, st_pos, end_pos, colour, piece)
     return position, False
 
-def computer_turn(position):
+def computer_turn(position, depth):
 
-    possible_moves = {}
+    colour = 1 #For now computer plays with black
+    if depth == 1:
+        possible_moves = compute_legal_moves(position, colour, 0)
+        move, piece = prepare_move_depth_1(possible_moves)
 
-    colour = 1
-    all_positions = [(x,y) for x in range(0,8) for y in range(0,8)]
-    possible_starting_positions = [(x,y) for x in range(0,8) for y in range(0,8) if position[x][y][0] == 'b']
-    for st_pos in possible_starting_positions:
-        piece = position[st_pos[0]][st_pos[1]]
+    elif depth == 2:
+        possible_moves = compute_legal_moves(position, colour, 1)
+        move, piece = prepare_move_depth_2(possible_moves, position)
 
-        if piece == 'emp':
-            break
-        for end_pos in all_positions:
-            if check_move(piece, position, st_pos, end_pos, colour, 1):
+    else:
+        print("Warning: depth {0} not implemented yet. Using depth = 2".format(depth))
+        possible_moves = compute_legal_moves(position, colour, 1)
+        move, piece = prepare_move_depth_2(possible_moves, position)
 
-                temp_position = updatepos(position, st_pos, end_pos, colour, piece)
-
-                points_w, points_b = calc_points(temp_position)
-                tentative_pos = [st_pos, end_pos, piece]
-                possible_moves.update({str(tentative_pos):points_w})
-            else:
-                continue
-
-    move, piece = prepare_move(possible_moves)
     st_pos, end_pos = move[0], move[1]
 
     position = updatepos(position, st_pos, end_pos, colour, piece)

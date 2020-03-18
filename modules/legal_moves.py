@@ -207,7 +207,7 @@ def pawn_move(position, st_pos, end_pos, colour, turn):
         elif position[y_end][x_end] == 'emp':
             if y_st == 6:
                  if x_end != x_st or (y_end != y_st - 1 and y_end != y_st - 2):
-                     print(x_end, x_st, y_end, y_st)
+                     
                      if turn == 0:
                          print("That's not how the pawn moves! Try another move")
                      return False

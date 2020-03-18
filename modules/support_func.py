@@ -4,11 +4,24 @@ Support functions for chess engine
 
 @author: fmalgarini
 """
-from modules.legal_moves import *
-import numpy as np
 import random
+import numpy as np
+from modules.legal_moves import *
 
 point_dict = {'r':5, 'k':3, 'b':3, 'q':9, 'K':0, 'p':1}
+player = {"w":0, "b":1}
+
+def read_settings():
+
+    with open("./settings.txt", "r") as f:
+        data = f.readlines()
+
+    try:
+        depth = int(data[0][-2:-1])
+    except:
+        print("Warning: check syntax of settings file when defining depth")
+
+    return depth
 
 def initialize_starting_position():
 
@@ -75,7 +88,7 @@ def check_move(piece, position, st_pos, end_pos, colour, turn):
 
         return is_valid
 
-def prepare_move(possible_moves):
+def prepare_move_depth_1(possible_moves):
 
     min_points = min(possible_moves.items())[1]
     min_keys = [k for k in possible_moves if possible_moves[k] == min_points]
@@ -84,9 +97,17 @@ def prepare_move(possible_moves):
     chars_to_remove = "( )[],'"
     for c in chars_to_remove:
         move = [x for x in move if x != c]
-    
+
     piece = str(move[4]) + ',' + str(move[5])
     move = [(move[0], move[1]), (move[2], move[3])]
+
+    return move, piece
+
+def prepare_move_depth_2(possible_moves, position):
+
+    move = possible_moves.split('|')[1].replace("'First move: ', ", "")
+    piece = position[int(move[2])][int(move[5])]
+    move = [(move[2], move[5]), (move[10], move[13])]
 
     return move, piece
 
@@ -97,12 +118,11 @@ def calc_points(position):
     for i in range(0,8):
         for j in range(0,8):
             if position[i][j] == 'emp':
-                break
+                continue
             elif position[i][j][0] == 'w':
                 points_w += point_dict[position[i][j][2]]
             elif position[i][j][0] == 'b':
                 points_b += point_dict[position[i][j][2]]
-
     return points_w, points_b
 
 def updatepos(position, st_pos, end_pos, colour, piece):
@@ -115,3 +135,59 @@ def updatepos(position, st_pos, end_pos, colour, piece):
     temp_position[y_end][x_end] = piece
 
     return temp_position
+
+def compute_legal_moves(position, colour, recall):
+
+    cont = 0
+    possible_moves = {}
+    possible_second_moves = []
+    if colour == 0:
+        c = 'w'
+    else:
+        c = 'b'
+
+    all_positions = [(x,y) for x in range(0,8) for y in range(0,8)]
+    possible_starting_positions = [(x,y) for x in range(0,8) for y in range(0,8) if position[x][y][0] == c]
+    for st_pos in possible_starting_positions:
+        piece = position[st_pos[0]][st_pos[1]]
+
+        if piece == 'emp':
+            break
+        for end_pos in all_positions:
+
+            if check_move(piece, position, st_pos, end_pos, colour, 1):
+                temp_position = updatepos(position, st_pos, end_pos, colour, piece)
+
+                if recall != 0:
+
+                    possible_second_moves.append(["First move: ", st_pos, end_pos])
+                    possible_second_moves.append(compute_legal_moves(temp_position, int(not colour), 0))
+
+                points_w, points_b = calc_points(temp_position)
+                tentative_pos = [st_pos, end_pos, piece]
+                possible_moves.update({str(tentative_pos):points_b - points_w})
+            else:
+                continue
+
+    best_moves = []
+
+    if recall:
+        for moves in range(1, len(possible_second_moves), 2):
+            temp = {}
+            for second_moves in possible_second_moves[moves].keys():
+                points = possible_second_moves[moves][second_moves]
+                temp.update({str(second_moves) + "|" + str(possible_second_moves[moves-1]):points})
+
+            best_moves.append(min(temp, key=temp.get))
+            best_moves.append(temp[min(temp, key=temp.get)])
+        best_moves_points = [i for i in best_moves if isinstance(i, int)]
+        maxval = max(best_moves_points)
+        indices = [index for index, val in enumerate(best_moves_points) if val == maxval]
+        chosen_move = best_moves[random.choice(indices) * 2]
+        possible_moves = chosen_move
+
+    return possible_moves
+
+def is_in_check(position, colour):
+
+    possible_moves = compute_legal_moves(position,colour)
