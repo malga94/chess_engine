@@ -15,6 +15,8 @@ def player_turn(position):
         print("Check!")
 
     is_valid = False
+    s_castle = False
+    l_castle = False
 
     while is_valid == False:
 
@@ -24,6 +26,7 @@ def player_turn(position):
           while piece == 'emp':
               valid_input = False
               st_pos = input("Insert the coordinates of the piece you want to move: ").split(',')
+
               if st_pos[0] == 's':
                   print("Saving position... ")
                   save_position(position)
@@ -33,6 +36,13 @@ def player_turn(position):
                   sure = input("Quitting without saving. Are you sure? (Y/N): ")
                   if sure.lower() == 'y':
                       exit()
+              elif st_pos[0].lower() == 'scastle' or st_pos[0].lower() == 'castle':
+                  st_pos = [7,4]
+                  s_castle = True
+
+              elif st_pos[0].lower() == 'lcastle':
+                  st_pos = [7,4]
+                  l_castle = True
 
               while len(st_pos) != 2:
                   st_pos = input("You must insert two coordinates, separated by a comma: ").split(',')
@@ -57,19 +67,26 @@ def player_turn(position):
                   piece = 'emp'
 
           while True:
-              end_pos = input("Insert the coordinates of the destination of the piece: ").split(',')
-              valid_input = False
-              while not valid_input:
-                  try:
-                      end_pos = list(map(int, end_pos))
-                      valid_input = True
+              if not l_castle and not s_castle:
+                  end_pos = input("Insert the coordinates of the destination of the piece: ").split(',')
+                  valid_input = False
+                  while not valid_input:
+                      try:
+                          end_pos = list(map(int, end_pos))
+                          valid_input = True
 
-                  except ValueError:
-                      end_pos = input("The coordinates must be integer values, not characters: ").split(',')
+                      except ValueError:
+                          end_pos = input("The coordinates must be integer values, not characters: ").split(',')
 
-                  except Exception as e:
-                      print(str(e))
-                      exit()
+                      except Exception as e:
+                          print(str(e))
+                          exit()
+
+              if s_castle == True:
+                  end_pos = [7,7]
+              elif l_castle == True:
+                  end_pos = [7,0]
+
               if check_valid_coord(st_pos, end_pos):
                   break
 
@@ -77,9 +94,6 @@ def player_turn(position):
 
     temp = position.copy()
     position = updatepos(position, st_pos, end_pos, colour, piece)
-
-    if is_in_check(temp, colour):
-        move, piece = handle_check(temp, colour)
 
     while is_in_check(position, colour):
         print("You are in check! Choose a valid move: ")
@@ -112,6 +126,7 @@ def computer_turn(position, depth):
 
     temp = position.copy()
     position = updatepos(position, st_pos, end_pos, colour, piece)
+
     if is_in_check(position, colour):
         computer_turn(temp, depth)
 

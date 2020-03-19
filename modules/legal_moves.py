@@ -5,6 +5,9 @@ Functions to determine if a chess move is legal
 @author: fmalgarini
 """
 
+w_king_moved, b_king_moved = False, False
+w_rook1_moved, w_rook2_moved, b_rook1_moved, b_rook2_moved = False, False, False, False
+
 def check_empty_path(position, x_st, y_st, x_end, y_end, turn):
 
     if x_st == x_end:
@@ -71,6 +74,8 @@ def check_empty_path(position, x_st, y_st, x_end, y_end, turn):
 
 def rook_move(position, st_pos, end_pos, colour, turn):
 
+    global rook1_moved, rook2_moved
+
     x_st, y_st = st_pos[1], st_pos[0]
     x_end, y_end = end_pos[1], end_pos[0]
 
@@ -96,6 +101,18 @@ def rook_move(position, st_pos, end_pos, colour, turn):
 
     elif x_st != x_end and y_st != y_end:
         return False
+
+    if x_st == 0 and y_st == 0:
+        b_rook1_moved = True
+
+    if x_st == 7 and y_st == 0:
+        b_rook2_moved = True
+
+    if x_st == 0 and y_st == 7:
+        w_rook1_moved = True
+
+    if x_st == 7 and y_st == 7:
+        w_rook2_moved = True
 
     return check_empty_path(position, x_st, y_st, x_end, y_end, turn)
 
@@ -188,10 +205,31 @@ def queen_move(position, st_pos, end_pos, colour, turn):
 
 def king_move(position, st_pos, end_pos, colour, turn):
 
+    global w_king_moved, b_king_moved, w_rook1_moved, w_rook2_moved, b_rook1_moved, b_rook2_moved
+
     x_st, y_st = st_pos[1], st_pos[0]
     x_end, y_end = end_pos[1], end_pos[0]
 
     if colour == 0:
+
+        #Short castle
+        if position[y_end][x_end] == "w,r":
+            if w_king_moved == False and w_rook2_moved == False:
+                return check_empty_path(position, x_st, y_st, x_end, y_end, turn)
+            else:
+                if turn == 0:
+                    print("Cannot castle: the white king has already moved")
+                return False
+
+        #Long castle
+        if position[y_end][x_end] == "w,r":
+            if w_king_moved == False and w_rook1_moved == False:
+                return check_empty_path(position, x_st, y_st, x_end, y_end, turn)
+            else:
+                if turn == 0:
+                    print("Cannot castle: the white king has already moved")
+                return False
+
         if position[y_st][x_st] != "w,K":
             print("Error: there is a bug in the code. Please write a mail to filippo.malgarini@gmail.com with a screenshot of the position and the move you just tried to play")
             return False
@@ -201,6 +239,20 @@ def king_move(position, st_pos, end_pos, colour, turn):
             return False
 
     if colour == 1:
+        #Short castle
+        if position[y_end][x_end] == "b,r":
+            if b_king_moved == False and b_rook2_moved == False:
+                return check_empty_path(position, x_st, y_st, x_end, y_end, turn)
+            else:
+                return False
+
+        #Long castle
+        if position[y_end][x_end] == "b,r":
+            if b_king_moved == False and b_rook1_moved == False:
+                return check_empty_path(position, x_st, y_st, x_end, y_end, turn)
+            else:
+                return False
+
         if position[y_st][x_st] != "b,K":
             return False
         if position[y_end][x_end][0] == 'b': #The arrival position has a black piece on it
@@ -208,10 +260,15 @@ def king_move(position, st_pos, end_pos, colour, turn):
                 print("Warning: there is a black piece already in the arrival position. Try another move")
             return False
 
-    if abs(x_end-x_st) != 1 or abs(y_end-y_st) != 1:
+    if abs(x_end-x_st) > 1 or abs(y_end-y_st) > 1:
         if turn == 0:
             print("That's not how the king moves! Try another move")
         return False
+
+    if not colour:
+        w_king_moved = True
+    else:
+        b_king_moved = True
 
     return True
 

@@ -1,2 +1,2 @@
 depth = 2
-load = n
+load = y

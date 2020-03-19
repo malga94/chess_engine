@@ -178,13 +178,13 @@ def compute_legal_moves(position, colour, recall):
 
     all_positions = [(x,y) for x in range(0,8) for y in range(0,8)]
     possible_starting_positions = [(x,y) for x in range(0,8) for y in range(0,8) if position[x][y][0] == c]
+
     for st_pos in possible_starting_positions:
         piece = position[st_pos[0]][st_pos[1]]
 
         if piece == 'emp':
             break
         for end_pos in all_positions:
-
             if check_move(piece, position, st_pos, end_pos, colour, 1):
                 temp_position = updatepos(position, st_pos, end_pos, colour, piece)
 
@@ -233,25 +233,11 @@ def is_in_check(position, colour):
         x += 1
 
     possible_moves = compute_legal_moves(position,int(not colour),0)
-
     for move in possible_moves.keys():
         if move[-14:-8] == str(king_pos):
             return True
 
     return False
-
-def get_king_moves(possible_moves):
-
-    keys_to_pop = []
-    temp_possible_moves = possible_moves.copy()
-    for key in temp_possible_moves.keys():
-        if key[-3] != 'K':
-            keys_to_pop.append(key)
-
-    for key in keys_to_pop:
-        temp_possible_moves.pop(key, 'None')
-
-    return temp_possible_moves
 
 def try_blocking_check(legal_move):
 
@@ -269,36 +255,31 @@ def try_blocking_check(legal_move):
 
 def handle_check(position, colour):
     game_over = True
+    alm_dict = {}
 
     possible_moves = compute_legal_moves(position, colour, 0)
-    king_moves = get_king_moves(possible_moves)
-    cont = 0
-
-    if len(king_moves) != 0:
-        while cont < len(king_moves):
-            move, piece = prepare_move_depth_1(king_moves, cont)
-            st_pos, end_pos = move[0], move[1]
-
-            temp_position = updatepos(position, st_pos, end_pos, colour, piece)
-            cont += 1
-
-            if not is_in_check(temp_position, colour):
-                game_over = False
-                break
 
     temp_position = position.copy()
-    if cont == len(king_moves):
 
-        if is_in_check(temp_position, colour):
-            for legal_move in possible_moves:
+    if is_in_check(temp_position, colour):
 
-                move, piece = try_blocking_check(legal_move)
-                st_pos, end_pos = move[0], move[1]
-                temp_position = updatepos(temp_position, st_pos, end_pos, colour, piece)
-                if not is_in_check(temp_position, colour):
+        for legal_move in possible_moves:
 
-                    game_over = False
-                    break
+            move, piece = try_blocking_check(legal_move)
+            st_pos, end_pos = move[0], move[1]
+            temp_position = updatepos(position, st_pos, end_pos, colour, piece)
+            if not is_in_check(temp_position, colour):
+                game_over = False
+
+                points_w, points_b = calc_points(temp_position)
+                points = points_b - points_w
+
+                alm_dict.update({legal_move:points})
+
+    #For now if there is more than one max it just takes the first occurrence.
+    #TODO: Modify to get best move based on other parameters (position, strategy...)
+    move_to_do = max(alm_dict, key=alm_dict.get)
+    move, piece = move, piece = try_blocking_check(move_to_do)
 
     if game_over:
         if colour == 0:
