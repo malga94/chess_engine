@@ -6,6 +6,7 @@ Support functions for chess engine
 """
 import random
 import glob
+import os
 import numpy as np
 from modules.legal_moves import *
 
@@ -108,12 +109,21 @@ def check_move(piece, position, st_pos, end_pos, colour, turn):
 
         return is_valid
 
-def prepare_move_depth_1(possible_moves):
+def prepare_move_depth_1(possible_moves, randomness):
 
     min_points = min(possible_moves.items())[1]
     min_keys = [k for k in possible_moves if possible_moves[k] == min_points]
 
-    move = list(random.choice(min_keys))
+    if randomness == -1:
+        move = list(random.choice(min_keys))
+    elif 0 <= randomness < len(min_keys):
+        move = list(min_keys[randomness])
+    else:
+        print("""Warning: something wrong in the prepare_move_depth_1 function. Please send
+              this message to filippo.malgarini@gmail.com together with the last position on screen""")
+        randomness = 0
+        move = list(min_keys[randomness])
+
     chars_to_remove = "( )[],'"
     for c in chars_to_remove:
         move = [x for x in move if x != c]
@@ -209,10 +219,98 @@ def compute_legal_moves(position, colour, recall):
     return possible_moves
 
 def is_in_check(position, colour):
+    x, y = 0, 0
+    for square in position:
+        y = 0
+        for element in square:
+            if colour == 1:
+                if str(element) == 'b,K':
+                    king_pos = (x, y)
+            elif colour == 0:
+                if str(element) == 'w,K':
+                    king_pos = (x, y)
+            y += 1
+        x += 1
 
-    possible_moves = compute_legal_moves(position,colour)
+    possible_moves = compute_legal_moves(position,int(not colour),0)
+
+    for move in possible_moves.keys():
+        if move[-14:-8] == str(king_pos):
+            return True
+
+    return False
+
+def get_king_moves(possible_moves):
+
+    keys_to_pop = []
+    temp_possible_moves = possible_moves.copy()
+    for key in temp_possible_moves.keys():
+        if key[-3] != 'K':
+            keys_to_pop.append(key)
+
+    for key in keys_to_pop:
+        temp_possible_moves.pop(key, 'None')
+
+    return temp_possible_moves
+
+def try_blocking_check(legal_move):
+
+    chars_to_remove = "( )[],'"
+
+    for c in chars_to_remove:
+        legal_move = [x for x in legal_move if x != c]
+        #TODO: Why doesn't it work if i call move = [x for x...] in the line above?
+
+    move = legal_move
+    piece = str(move[4]) + ',' + str(move[5])
+    move = [(move[0], move[1]), (move[2], move[3])]
+
+    return move, piece
+
+def handle_check(position, colour):
+    game_over = True
+
+    possible_moves = compute_legal_moves(position, colour, 0)
+    king_moves = get_king_moves(possible_moves)
+    cont = 0
+
+    if len(king_moves) != 0:
+        while cont < len(king_moves):
+            move, piece = prepare_move_depth_1(king_moves, cont)
+            st_pos, end_pos = move[0], move[1]
+
+            temp_position = updatepos(position, st_pos, end_pos, colour, piece)
+            cont += 1
+
+            if not is_in_check(temp_position, colour):
+                game_over = False
+                break
+
+    temp_position = position.copy()
+    if cont == len(king_moves):
+
+        if is_in_check(temp_position, colour):
+            for legal_move in possible_moves:
+
+                move, piece = try_blocking_check(legal_move)
+                st_pos, end_pos = move[0], move[1]
+                temp_position = updatepos(temp_position, st_pos, end_pos, colour, piece)
+                if not is_in_check(temp_position, colour):
+
+                    game_over = False
+                    break
+
+    if game_over:
+        print("Game over")
+        exit()
+
+    return move, piece
 
 def save_position(position):
+
+    dir = os.listdir("./")
+    if "saved_games" not in dir:
+        os.mkdir("saved_games")
 
     files_present = glob.glob("./saved_games/*.txt")
     x = len(files_present) + 1
@@ -220,3 +318,58 @@ def save_position(position):
     if x<100:
         with open("./saved_games/game{0}.txt".format(x), "w+") as f:
             f.writelines(str(position) + '\n')
+
+def pretty_print(pos):
+
+    cont = 1
+    for line in pos:
+        for element in line:
+            if element[2] == 'q':
+                if cont % 8 == 0:
+                    print("\033[1;31;42m {0}".format(element), end = ' ')
+                    print("\033[1;37;40m")
+
+                else:
+                    print("\033[1;31;42m {0}".format(element), end = ' ')
+            elif element[2] == 'b':
+                if cont % 8 == 0:
+                    print("\033[1;32;40m {0}".format(element), end = ' ')
+                    print("\033[1;37;40m")
+
+                else:
+                    print("\033[1;32;40m {0}".format(element), end = ' ')
+            elif element[2] == 'k':
+                if cont % 8 == 0:
+                    print("\033[1;33;40m {0}".format(element), end = ' ')
+                    print("\033[1;37;40m")
+
+                else:
+                    print("\033[1;33;40m {0}".format(element), end = ' ')
+            elif element[2] == 'r':
+                if cont % 8 == 0:
+                    print("\033[1;34;47m {0}".format(element), end = ' ')
+                    print("\033[1;37;40m")
+
+                else:
+                    print("\033[1;34;47m {0}".format(element), end = ' ')
+            elif element[2] == 'K':
+                if cont % 8 == 0:
+                    print("\033[1;35;40m {0}".format(element), end = ' ')
+                    print("\033[1;37;40m")
+
+                else:
+                    print("\033[1;35;40m {0}".format(element), end = ' ')
+            elif element[2] == 'p':
+                if cont % 8 == 0:
+                    print("\033[1;37;40m {0}".format(element))
+
+                else:
+                    print("\033[1;37;40m {0}".format(element), end = ' ')
+            else:
+                if cont % 8 == 0:
+                    print("\033[1;37;40m ")
+
+                else:
+                    print("\033[1;37;40m ", end = ' ')
+            cont += 1
+    print("\033[1;37;40m")

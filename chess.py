@@ -32,15 +32,15 @@ def main():
 
     else:
         initial_pos = initialize_starting_position()
-    print(initial_pos)
+    pretty_print(initial_pos)
     position = initial_pos
 
     while not game_over:
-        position, game_over = player_turn(position)
-        print(position)
+        position = player_turn(position)
+        pretty_print(position)
         print('\n')
-        position, game_over = computer_turn(position, depth)
-        print(position)
+        position = computer_turn(position, depth)
+        pretty_print(position)
 
 if __name__ == '__main__':
     main()

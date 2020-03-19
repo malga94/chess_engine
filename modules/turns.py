@@ -10,6 +10,10 @@ player = {"w":0, "b":1}
 
 def player_turn(position):
 
+    colour = 0 #For now player can only use white
+    if is_in_check(position, colour):
+        print("Check!")
+
     is_valid = False
 
     while is_valid == False:
@@ -69,33 +73,42 @@ def player_turn(position):
               if check_valid_coord(st_pos, end_pos):
                   break
 
-          #colour = 0 if white, 1 if black
-          colour = player[piece[0]]
-
           is_valid = check_move(piece, position, st_pos, end_pos, colour, 0)
 
-
+    temp = position.copy()
     position = updatepos(position, st_pos, end_pos, colour, piece)
-    return position, False
+    while is_in_check(position, colour):
+        print("You are in check! Choose a valid move: ")
+        position = player_turn(temp)
+
+    return position
 
 def computer_turn(position, depth):
 
     colour = 1 #For now computer plays with black
-    if depth == 1:
-        possible_moves = compute_legal_moves(position, colour, 0)
-        move, piece = prepare_move_depth_1(possible_moves)
-
-    elif depth == 2:
-        possible_moves = compute_legal_moves(position, colour, 1)
-        move, piece = prepare_move_depth_2(possible_moves, position)
+    if is_in_check(position, colour):
+        print("Check!")
+        move, piece = handle_check(position, colour)
 
     else:
-        print("Warning: depth {0} not implemented yet. Using depth = 2".format(depth))
-        possible_moves = compute_legal_moves(position, colour, 1)
-        move, piece = prepare_move_depth_2(possible_moves, position)
+        if depth == 1:
+            possible_moves = compute_legal_moves(position, colour, 0)
+            move, piece = prepare_move_depth_1(possible_moves, -1)
+
+        elif depth == 2:
+            possible_moves = compute_legal_moves(position, colour, 1)
+            move, piece = prepare_move_depth_2(possible_moves, position)
+
+        else:
+            print("Warning: depth {0} not implemented yet. Using depth = 2".format(depth))
+            possible_moves = compute_legal_moves(position, colour, 1)
+            move, piece = prepare_move_depth_2(possible_moves, position)
 
     st_pos, end_pos = move[0], move[1]
 
+    temp = position.copy()
     position = updatepos(position, st_pos, end_pos, colour, piece)
+    #if is_in_check(position, colour):
+    #    computer_turn(temp, depth)
 
-    return position, False
+    return position

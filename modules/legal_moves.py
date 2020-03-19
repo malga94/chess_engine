@@ -188,7 +188,32 @@ def queen_move(position, st_pos, end_pos, colour, turn):
 
 def king_move(position, st_pos, end_pos, colour, turn):
 
-    return False
+    x_st, y_st = st_pos[1], st_pos[0]
+    x_end, y_end = end_pos[1], end_pos[0]
+
+    if colour == 0:
+        if position[y_st][x_st] != "w,K":
+            print("Error: there is a bug in the code. Please write a mail to filippo.malgarini@gmail.com with a screenshot of the position and the move you just tried to play")
+            return False
+        if position[y_end][x_end][0] == 'w': #The arrival position has a white piece on it
+            if turn == 0:
+                print("Warning: there is a white piece already in the arrival position. Try another move")
+            return False
+
+    if colour == 1:
+        if position[y_st][x_st] != "b,K":
+            return False
+        if position[y_end][x_end][0] == 'b': #The arrival position has a black piece on it
+            if turn == 0:
+                print("Warning: there is a black piece already in the arrival position. Try another move")
+            return False
+
+    if abs(x_end-x_st) != 1 or abs(y_end-y_st) != 1:
+        if turn == 0:
+            print("That's not how the king moves! Try another move")
+        return False
+
+    return True
 
 def pawn_move(position, st_pos, end_pos, colour, turn):
 
@@ -207,7 +232,7 @@ def pawn_move(position, st_pos, end_pos, colour, turn):
         elif position[y_end][x_end] == 'emp':
             if y_st == 6:
                  if x_end != x_st or (y_end != y_st - 1 and y_end != y_st - 2):
-                     
+
                      if turn == 0:
                          print("That's not how the pawn moves! Try another move")
                      return False
