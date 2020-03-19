@@ -102,17 +102,18 @@ def rook_move(position, st_pos, end_pos, colour, turn):
     elif x_st != x_end and y_st != y_end:
         return False
 
-    if x_st == 0 and y_st == 0:
-        b_rook1_moved = True
+    if turn == 0:
+        if x_st == 0 and y_st == 0:
+            b_rook1_moved = True
 
-    if x_st == 7 and y_st == 0:
-        b_rook2_moved = True
+        if x_st == 7 and y_st == 0:
+            b_rook2_moved = True
 
-    if x_st == 0 and y_st == 7:
-        w_rook1_moved = True
+        if x_st == 0 and y_st == 7:
+            w_rook1_moved = True
 
-    if x_st == 7 and y_st == 7:
-        w_rook2_moved = True
+        if x_st == 7 and y_st == 7:
+            w_rook2_moved = True
 
     return check_empty_path(position, x_st, y_st, x_end, y_end, turn)
 
@@ -206,7 +207,7 @@ def queen_move(position, st_pos, end_pos, colour, turn):
 def king_move(position, st_pos, end_pos, colour, turn):
 
     global w_king_moved, b_king_moved, w_rook1_moved, w_rook2_moved, b_rook1_moved, b_rook2_moved
-
+    
     x_st, y_st = st_pos[1], st_pos[0]
     x_end, y_end = end_pos[1], end_pos[0]
 
@@ -265,10 +266,11 @@ def king_move(position, st_pos, end_pos, colour, turn):
             print("That's not how the king moves! Try another move")
         return False
 
-    if not colour:
-        w_king_moved = True
-    else:
-        b_king_moved = True
+    if turn == 0:
+        if colour == 0:
+            w_king_moved = True
+        else:
+            b_king_moved = True
 
     return True
 

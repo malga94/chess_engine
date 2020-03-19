@@ -16,7 +16,7 @@ def main():
     print("Welcome to TerribleChess! Press q in any moment to quit the game")
     depth, load = read_settings()
 
-    game_over = False
+    move = 0
 
     if load.lower() == 'y':
         game_num = input("Which game would you like to load: ")
@@ -32,15 +32,17 @@ def main():
 
     else:
         initial_pos = initialize_starting_position()
+
     pretty_print(initial_pos)
     position = initial_pos
 
-    while not game_over:
-        position = player_turn(position)
+    while True:
+        position = player_turn(position, move)
         pretty_print(position)
         print('\n')
-        position = computer_turn(position, depth)
+        position = computer_turn(position, depth, move)
         pretty_print(position)
+        move += 1
 
 if __name__ == '__main__':
     main()

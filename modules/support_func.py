@@ -10,7 +10,7 @@ import os
 import numpy as np
 from modules.legal_moves import *
 
-point_dict = {'r':5, 'k':3, 'b':3, 'q':9, 'K':0, 'p':1}
+point_dict = {'r':5, 'k':3, 'b':3, 'q':9, 'K':100, 'p':1}
 player = {"w":0, "b":1}
 
 def read_settings():
@@ -141,7 +141,7 @@ def prepare_move_depth_2(possible_moves, position):
 
     return move, piece
 
-def calc_points(position):
+def calc_points(position, move_num):
 
     points_w = 0
     points_b = 0
@@ -150,10 +150,58 @@ def calc_points(position):
             if position[i][j] == 'emp':
                 continue
             elif position[i][j][0] == 'w':
-                points_w += point_dict[position[i][j][2]]
+                if position[i][j] == 'w,k' and move_num > 7:
+                    if i%8 == 0 or j%8 == 0:
+                        points_w += 2.5
+                    elif 2<=i<=5 and 2<=j<=5:
+                        points_w += 3.5
+                    else:
+                        points_w += point_dict[position[i][j][2]]
+                else:
+                    points_w += point_dict[position[i][j][2]]
             elif position[i][j][0] == 'b':
-                points_b += point_dict[position[i][j][2]]
+                if position[i][j] == 'b,k' and move_num > 7:
+                    if i%8 == 0 or j%8 == 0:
+                        points_b += 2.5
+                    elif 2<=i<=5 and 2<=j<=5:
+                        points_b += 3.5
+                    else:
+                        points_b += point_dict[position[i][j][2]]
+                elif position[i][j] == 'b,b' and move_num > 7:
+                    bishop_val = check_diagonals(position, i, j)
+                    points_b += bishop_val
+                else:
+                    points_b += point_dict[position[i][j][2]]
     return points_w, points_b
+
+def check_diagonals(position, i, j):
+    #Function to assign a value to the bishop as a function of how many pieces lie on the check_diagonals
+    #controlled by it. The reasoning is that a bishop controlling an empty diagonal is more valuable, and
+    #moves leading to such a position should be encouraged
+
+    #Total pieces on the board
+    total_pieces = -1
+    diagonals = []
+    #Put every square covered by the bishop in (i,j) in the array diagonals
+    for x in range(0,8):
+        for y in range(0,8):
+            if abs(i-y) == abs(j-x):
+                diagonals.append((y,x))
+            if position[y][x] != 'emp':
+                total_pieces += 1
+
+    #Remove the square occupied by the bishop from diagonals
+    diagonals.remove((i,j))
+
+    num_pieces = 0
+    for pos in diagonals:
+        #count the number of pieces in the diagonals controlled by the bishop
+        if position[pos[0]][pos[1]] != 'emp':
+            num_pieces += 1
+
+    bishop_val = 3.5-5*num_pieces/total_pieces
+
+    return bishop_val
 
 def updatepos(position, st_pos, end_pos, colour, piece):
 
@@ -166,7 +214,7 @@ def updatepos(position, st_pos, end_pos, colour, piece):
 
     return temp_position
 
-def compute_legal_moves(position, colour, recall):
+def compute_legal_moves(position, colour, recall, move_num):
 
     cont = 0
     possible_moves = {}
@@ -191,9 +239,9 @@ def compute_legal_moves(position, colour, recall):
                 if recall != 0:
 
                     possible_second_moves.append(["First move: ", st_pos, end_pos])
-                    possible_second_moves.append(compute_legal_moves(temp_position, int(not colour), 0))
+                    possible_second_moves.append(compute_legal_moves(temp_position, int(not colour), 0, move_num))
 
-                points_w, points_b = calc_points(temp_position)
+                points_w, points_b = calc_points(temp_position, move_num)
                 tentative_pos = [st_pos, end_pos, piece]
                 possible_moves.update({str(tentative_pos):points_b - points_w})
             else:
@@ -210,7 +258,8 @@ def compute_legal_moves(position, colour, recall):
 
             best_moves.append(min(temp, key=temp.get))
             best_moves.append(temp[min(temp, key=temp.get)])
-        best_moves_points = [i for i in best_moves if isinstance(i, int)]
+        #TODO: This part is a mess. Rewrite completely
+        best_moves_points = [i for i in best_moves if not isinstance(i, str)]
         maxval = max(best_moves_points)
         indices = [index for index, val in enumerate(best_moves_points) if val == maxval]
         chosen_move = best_moves[random.choice(indices) * 2]
@@ -218,7 +267,7 @@ def compute_legal_moves(position, colour, recall):
 
     return possible_moves
 
-def is_in_check(position, colour):
+def is_in_check(position, colour, move_num):
     x, y = 0, 0
     for square in position:
         y = 0
@@ -232,7 +281,7 @@ def is_in_check(position, colour):
             y += 1
         x += 1
 
-    possible_moves = compute_legal_moves(position,int(not colour),0)
+    possible_moves = compute_legal_moves(position,int(not colour),0, move_num)
     for move in possible_moves.keys():
         if move[-14:-8] == str(king_pos):
             return True
@@ -253,11 +302,11 @@ def try_blocking_check(legal_move):
 
     return move, piece
 
-def handle_check(position, colour):
+def handle_check(position, colour, move_num):
     game_over = True
     alm_dict = {}
 
-    possible_moves = compute_legal_moves(position, colour, 0)
+    possible_moves = compute_legal_moves(position, colour, 0, move_num)
 
     temp_position = position.copy()
 
@@ -268,10 +317,10 @@ def handle_check(position, colour):
             move, piece = try_blocking_check(legal_move)
             st_pos, end_pos = move[0], move[1]
             temp_position = updatepos(position, st_pos, end_pos, colour, piece)
-            if not is_in_check(temp_position, colour):
+            if not is_in_check(temp_position, colour, move_num):
                 game_over = False
 
-                points_w, points_b = calc_points(temp_position)
+                points_w, points_b = calc_points(temp_position, move_num)
                 points = points_b - points_w
 
                 alm_dict.update({legal_move:points})
@@ -290,6 +339,36 @@ def handle_check(position, colour):
         exit()
 
     return move, piece
+
+def castle(position, short, colour):
+
+    temp_position = position.copy()
+
+    if short and colour:
+        temp_position[7][5] = "w,r"
+        temp_position[7][6] = "w,K"
+        temp_position[7][4] = "emp"
+        temp_position[7][7] = "emp"
+
+    elif short and not colour:
+        temp_position[0][5] = "b,r"
+        temp_position[0][6] = "b,K"
+        temp_position[0][4] = "emp"
+        temp_position[0][7] = "emp"
+
+    elif not short and colour:
+        temp_position[7][2] = "w,r"
+        temp_position[7][3] = "w,K"
+        temp_position[7][4] = "emp"
+        temp_position[7][0] = "emp"
+
+    else:
+        temp_position[0][3] = "b,r"
+        temp_position[0][2] = "b,K"
+        temp_position[0][4] = "emp"
+        temp_position[0][0] = "emp"
+
+    return temp_position
 
 def save_position(position):
 
