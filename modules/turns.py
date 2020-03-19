@@ -77,6 +77,10 @@ def player_turn(position):
 
     temp = position.copy()
     position = updatepos(position, st_pos, end_pos, colour, piece)
+
+    if is_in_check(temp, colour):
+        move, piece = handle_check(temp, colour)
+
     while is_in_check(position, colour):
         print("You are in check! Choose a valid move: ")
         position = player_turn(temp)
@@ -108,7 +112,7 @@ def computer_turn(position, depth):
 
     temp = position.copy()
     position = updatepos(position, st_pos, end_pos, colour, piece)
-    #if is_in_check(position, colour):
-    #    computer_turn(temp, depth)
+    if is_in_check(position, colour):
+        computer_turn(temp, depth)
 
     return position

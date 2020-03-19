@@ -301,7 +301,11 @@ def handle_check(position, colour):
                     break
 
     if game_over:
-        print("Game over")
+        if colour == 0:
+            player = "white"
+        else:
+            player = "black"
+        print("Game over: {0} wins!".format(player))
         exit()
 
     return move, piece

@@ -1,3 +1,5 @@
 prove.py
 *.pyc
 saved_games
+todo.def
+chessboard.txt
