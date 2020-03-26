@@ -5,6 +5,7 @@ To run the program, after downloading the repository, open the terminal (UNIX sy
 run either
 
 cd ~/path_to_repo/chess (UNIX)
+
 cd Z:\path_to_repo\chess (Windows)
 
 where path_to_repo is the path from your home directory to wherever you downloaded this repository.
@@ -12,6 +13,7 @@ where path_to_repo is the path from your home directory to wherever you download
 Then simply run 
 
 python chess.py (UNIX)
+
 C:\python37\python.exe chess.py (Windows)
 
 A terminal interface will open, asking you for the coordinates of the piece you want to move. You will always have the 
@@ -36,10 +38,15 @@ very easy to defeat)
 Future updates (and essential missing features to be coded):
 
 1)Need to include castling
+
 2)En-passant capture with the pawn
+
 3)Improving user interaction with the program, and visualization of the chess board
+
 3b)Eventually building a proper GUI
+
 4)Increasing the strength of the computer
+
 5)Including analysis of games
 
 Goal of the project:
