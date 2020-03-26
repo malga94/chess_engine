@@ -70,6 +70,8 @@ def player_turn(position, move_num):
               if not l_castle and not s_castle:
                   end_pos = input("Insert the coordinates of the destination of the piece: ").split(',')
                   valid_input = False
+                  while len(end_pos) != 2:
+                      end_pos = input("You must insert two coordinates, separated by a comma: ").split(',')
                   while not valid_input:
                       try:
                           end_pos = list(map(int, end_pos))
@@ -103,7 +105,7 @@ def player_turn(position, move_num):
 
     while is_in_check(position, colour, move_num):
         print("You are in check! Choose a valid move: ")
-        position = player_turn(temp)
+        position = player_turn(temp, move_num)
 
     return position
 
@@ -120,6 +122,7 @@ def computer_turn(position, depth, move_num):
             move, piece = prepare_move_depth_1(possible_moves, -1)
 
         elif depth == 2:
+            #possible_moves = compute_legal_moves(position, colour, 1, move_num)
             possible_moves = compute_legal_moves(position, colour, 1, move_num)
             move, piece = prepare_move_depth_2(possible_moves, position)
 

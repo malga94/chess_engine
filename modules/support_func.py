@@ -12,6 +12,8 @@ from modules.legal_moves import *
 
 point_dict = {'r':5, 'k':3, 'b':3, 'q':9, 'K':100, 'p':1}
 player = {"w":0, "b":1}
+possible_moves_l = []
+corr_points = []
 
 def read_settings():
 
@@ -214,6 +216,31 @@ def updatepos(position, st_pos, end_pos, colour, piece):
 
     return temp_position
 
+def calculate_next_move(position, colour, depth, move_num):
+
+    if colour == 0:
+        c = 'w'
+    else:
+        c = 'b'
+
+    all_positions = [(x,y) for x in range(0,8) for y in range(0,8)]
+    possible_starting_positions = [(x,y) for x in range(0,8) for y in range(0,8) if position[x][y][0] == c]
+
+    for st_pos in possible_starting_positions:
+        piece = position[st_pos[0]][st_pos[1]]
+
+        for end_pos in all_positions:
+            if check_move(piece, position, st_pos, end_pos, colour, 1):
+                #print(piece, st_pos, end_pos)
+                possible_moves_l.extend([st_pos, end_pos])
+                if depth > 1:
+                    position = updatepos(position, st_pos, end_pos, colour, position[st_pos[0]][st_pos[1]])
+                    points_w, points_b = calc_points(position, move_num)
+                    corr_points.extend([points_b - points_w, 0])
+                    calculate_next_move(position, not colour, depth-1, move_num)
+
+    print(possible_moves_l, corr_points)
+
 def compute_legal_moves(position, colour, recall, move_num):
 
     cont = 0
@@ -230,8 +257,6 @@ def compute_legal_moves(position, colour, recall, move_num):
     for st_pos in possible_starting_positions:
         piece = position[st_pos[0]][st_pos[1]]
 
-        if piece == 'emp':
-            break
         for end_pos in all_positions:
             if check_move(piece, position, st_pos, end_pos, colour, 1):
                 temp_position = updatepos(position, st_pos, end_pos, colour, piece)
@@ -310,7 +335,7 @@ def handle_check(position, colour, move_num):
 
     temp_position = position.copy()
 
-    if is_in_check(temp_position, colour):
+    if is_in_check(temp_position, colour, move_num):
 
         for legal_move in possible_moves:
 
@@ -344,19 +369,19 @@ def castle(position, short, colour):
 
     temp_position = position.copy()
 
-    if short and colour:
+    if short and not colour:
         temp_position[7][5] = "w,r"
         temp_position[7][6] = "w,K"
         temp_position[7][4] = "emp"
         temp_position[7][7] = "emp"
 
-    elif short and not colour:
+    elif short and colour:
         temp_position[0][5] = "b,r"
         temp_position[0][6] = "b,K"
         temp_position[0][4] = "emp"
         temp_position[0][7] = "emp"
 
-    elif not short and colour:
+    elif not short and not colour:
         temp_position[7][2] = "w,r"
         temp_position[7][3] = "w,K"
         temp_position[7][4] = "emp"
