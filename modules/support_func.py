@@ -13,7 +13,7 @@ from modules.legal_moves import *
 point_dict = {'r':5, 'k':3, 'b':3, 'q':9, 'K':100, 'p':1}
 player = {"w":0, "b":1}
 possible_moves_l = []
-corr_points = []
+points_tree = []
 
 def read_settings():
 
@@ -111,38 +111,6 @@ def check_move(piece, position, st_pos, end_pos, colour, turn):
 
         return is_valid
 
-def prepare_move_depth_1(possible_moves, randomness):
-
-    min_points = min(possible_moves.items())[1]
-    min_keys = [k for k in possible_moves if possible_moves[k] == min_points]
-
-    if randomness == -1:
-        move = list(random.choice(min_keys))
-    elif 0 <= randomness < len(min_keys):
-        move = list(min_keys[randomness])
-    else:
-        print("""Warning: something wrong in the prepare_move_depth_1 function. Please send
-              this message to filippo.malgarini@gmail.com together with the last position on screen""")
-        randomness = 0
-        move = list(min_keys[randomness])
-
-    chars_to_remove = "( )[],'"
-    for c in chars_to_remove:
-        move = [x for x in move if x != c]
-
-    piece = str(move[4]) + ',' + str(move[5])
-    move = [(move[0], move[1]), (move[2], move[3])]
-
-    return move, piece
-
-def prepare_move_depth_2(possible_moves, position):
-
-    move = possible_moves.split('|')[1].replace("'First move: ', ", "")
-    piece = position[int(move[2])][int(move[5])]
-    move = [(move[2], move[5]), (move[10], move[13])]
-
-    return move, piece
-
 def calc_points(position, move_num):
 
     points_w = 0
@@ -153,7 +121,7 @@ def calc_points(position, move_num):
                 continue
             elif position[i][j][0] == 'w':
                 if position[i][j] == 'w,k' and move_num > 7:
-                    if i%8 == 0 or j%8 == 0:
+                    if i%7 == 0 or j%7 == 0:
                         points_w += 2.5
                     elif 2<=i<=5 and 2<=j<=5:
                         points_w += 3.5
@@ -163,7 +131,7 @@ def calc_points(position, move_num):
                     points_w += point_dict[position[i][j][2]]
             elif position[i][j][0] == 'b':
                 if position[i][j] == 'b,k' and move_num > 7:
-                    if i%8 == 0 or j%8 == 0:
+                    if i%7 == 0 or j%7 == 0:
                         points_b += 2.5
                     elif 2<=i<=5 and 2<=j<=5:
                         points_b += 3.5
@@ -172,8 +140,15 @@ def calc_points(position, move_num):
                 elif position[i][j] == 'b,b' and move_num > 7:
                     bishop_val = check_diagonals(position, i, j)
                     points_b += bishop_val
+                elif position[i][j] == 'b,r' and move_num < 10:
+                    #Slightly discouraging movement of rooks in the first 10 moves
+                    if i != 0 or j%7 != 0:
+                        points_b += 4.5
+                    else:
+                        points_b += 5
                 else:
                     points_b += point_dict[position[i][j][2]]
+
     return points_w, points_b
 
 def check_diagonals(position, i, j):
@@ -216,8 +191,11 @@ def updatepos(position, st_pos, end_pos, colour, piece):
 
     return temp_position
 
-def calculate_next_move(position, colour, depth, move_num):
+def calculate_next_move(position, colour, depth, cont, move_num):
 
+    global possible_moves_l
+    if depth == cont:
+        possible_moves_l = []
     if colour == 0:
         c = 'w'
     else:
@@ -230,67 +208,153 @@ def calculate_next_move(position, colour, depth, move_num):
         piece = position[st_pos[0]][st_pos[1]]
 
         for end_pos in all_positions:
+
             if check_move(piece, position, st_pos, end_pos, colour, 1):
-                #print(piece, st_pos, end_pos)
-                possible_moves_l.extend([st_pos, end_pos])
-                if depth > 1:
-                    position = updatepos(position, st_pos, end_pos, colour, position[st_pos[0]][st_pos[1]])
-                    points_w, points_b = calc_points(position, move_num)
-                    corr_points.extend([points_b - points_w, 0])
-                    calculate_next_move(position, not colour, depth-1, move_num)
 
-    print(possible_moves_l, corr_points)
-
-def compute_legal_moves(position, colour, recall, move_num):
-
-    cont = 0
-    possible_moves = {}
-    possible_second_moves = []
-    if colour == 0:
-        c = 'w'
-    else:
-        c = 'b'
-
-    all_positions = [(x,y) for x in range(0,8) for y in range(0,8)]
-    possible_starting_positions = [(x,y) for x in range(0,8) for y in range(0,8) if position[x][y][0] == c]
-
-    for st_pos in possible_starting_positions:
-        piece = position[st_pos[0]][st_pos[1]]
-
-        for end_pos in all_positions:
-            if check_move(piece, position, st_pos, end_pos, colour, 1):
                 temp_position = updatepos(position, st_pos, end_pos, colour, piece)
-
-                if recall != 0:
-
-                    possible_second_moves.append(["First move: ", st_pos, end_pos])
-                    possible_second_moves.append(compute_legal_moves(temp_position, int(not colour), 0, move_num))
-
                 points_w, points_b = calc_points(temp_position, move_num)
-                tentative_pos = [st_pos, end_pos, piece]
-                possible_moves.update({str(tentative_pos):points_b - points_w})
-            else:
-                continue
+                possible_moves_l.append([st_pos, end_pos, c, cont, points_b-points_w])
+                if cont > 1:
+                    calculate_next_move(temp_position, int(not colour), depth, cont-1, move_num)
 
-    best_moves = []
+    return possible_moves_l
 
-    if recall:
-        for moves in range(1, len(possible_second_moves), 2):
-            temp = {}
-            for second_moves in possible_second_moves[moves].keys():
-                points = possible_second_moves[moves][second_moves]
-                temp.update({str(second_moves) + "|" + str(possible_second_moves[moves-1]):points})
+def pack_list(possible_moves, depth, x):
 
-            best_moves.append(min(temp, key=temp.get))
-            best_moves.append(temp[min(temp, key=temp.get)])
-        #TODO: This part is a mess. Rewrite completely
-        best_moves_points = [i for i in best_moves if not isinstance(i, str)]
-        maxval = max(best_moves_points)
-        indices = [index for index, val in enumerate(best_moves_points) if val == maxval]
-        chosen_move = best_moves[random.choice(indices) * 2]
-        possible_moves = chosen_move
+    if depth not in [1,2,3,4]:
+        print("Warning: pack_list function only works for depths up to 4. Returning empy list")
+        return []
 
-    return possible_moves
+    first_layer, second_layer, third_layer, fourth_layer = [], [], [], []
+    for i in range(depth - 1, x):
+        if possible_moves[i][3] == 1:
+            first_layer.append(possible_moves[i][4])
+        elif possible_moves[i][3] == 2 and possible_moves[i-1][3] != 3:
+            second_layer.append(first_layer)
+            first_layer = []
+        elif possible_moves[i][3] == 3 and possible_moves[i-1][3] != 4:
+            second_layer.append(first_layer)
+            third_layer.append(second_layer)
+            first_layer = []
+            second_layer = []
+        elif possible_moves[i][3] == 4:
+            second_layer.append(first_layer)
+            third_layer.append(second_layer)
+            fourth_layer.append(third_layer)
+            first_layer = []
+            second_layer = []
+            third_layer = []
+
+    if depth == 1:
+        return first_layer
+    elif depth == 2:
+        second_layer.append(first_layer)
+        return second_layer
+    elif depth == 3:
+        second_layer.append(first_layer)
+        third_layer.append(second_layer)
+        return third_layer
+    elif depth == 4:
+        second_layer.append(first_layer)
+        third_layer.append(second_layer)
+        fourth_layer.append(third_layer)
+        return fourth_layer
+
+def extract_max_list_of_tuples(list_of_tuples):
+
+    a = []
+    for i in list_of_tuples:
+        a.append(i[1])
+
+    greatest = max(a)
+    max_vals = []
+    for i, val in enumerate(a):
+        if val == greatest:
+            max_vals.append(i)
+
+    maxval = list_of_tuples[random.choice(max_vals)][0]
+    return maxval
+
+def extract_max_from_dict(best_move_dict):
+
+    maxval = max(best_move_dict.values())
+    good_keys = []
+    for key in best_move_dict:
+        if best_move_dict[key] == maxval:
+            good_keys.append(key)
+
+    return random.choice(good_keys)
+
+def choose_best_move(possible_moves, depth):
+
+    cont = depth
+    indexes = [[] for i in range(depth)]
+    while cont > 0:
+        for i, move in enumerate(possible_moves):
+            if move[3] == cont:
+                indexes[cont-1].append(i)
+
+        cont = cont - 1
+
+    x = len(possible_moves)
+    packed_moves = pack_list(possible_moves, depth, x)
+
+    best_move = []
+    best_move_dict = {}
+    cont = 0
+
+    if depth == 1:
+        for i, val in enumerate(packed_moves):
+            if val == max(packed_moves):
+                best_move.append(i)
+
+        chosen_move = possible_moves[random.choice(best_move)]
+        return chosen_move
+
+    for i, layer in enumerate(packed_moves):
+        if depth > 2:
+            best_move.append({})
+            for j, second_layer in enumerate(layer):
+                if depth > 3:
+                    for k, third_layer in enumerate(second_layer):
+                        exit()
+                else:
+                    maxval = max(second_layer)
+                    pos = indexes[depth-2][cont] + second_layer.index(maxval) + 1
+
+                    best_move[i].update({pos:maxval})
+                    cont += 1
+        else:
+            minval = min(layer)
+            pos = indexes[depth-1][cont] + layer.index(minval) + 1
+            best_move_dict.update({pos:minval})
+            cont += 1
+
+    if depth == 2:
+        best_move_pos = extract_max_from_dict(best_move_dict)
+
+    if depth > 2:
+        temp = []
+        for dict in best_move:
+            temp.append(min(dict.items(), key=lambda x: x[1]))
+
+        #Here we need to extract all positions in the temp list where the points are maximum
+        for i, val in enumerate(temp):
+            print(possible_moves[val[0]])
+            print(best_move[i])
+            for index in reversed(indexes[depth-1]):
+                if val[0] > index:
+                    print(possible_moves[index])
+                    print("\n")
+                    break
+        best_move_pos = extract_max_list_of_tuples(temp)
+
+    for index in reversed(indexes[depth-1]):
+        if best_move_pos > index:
+            chosen_move = possible_moves[index]
+            break
+
+    return chosen_move
 
 def is_in_check(position, colour, move_num):
     x, y = 0, 0
@@ -306,32 +370,19 @@ def is_in_check(position, colour, move_num):
             y += 1
         x += 1
 
-    possible_moves = compute_legal_moves(position,int(not colour),0, move_num)
-    for move in possible_moves.keys():
-        if move[-14:-8] == str(king_pos):
+    possible_moves = calculate_next_move(position, int(not colour), 1, 1, move_num)
+
+    for move in possible_moves:
+        if str(move)[9:15] == str(king_pos):
             return True
 
     return False
 
-def try_blocking_check(legal_move):
-
-    chars_to_remove = "( )[],'"
-
-    for c in chars_to_remove:
-        legal_move = [x for x in legal_move if x != c]
-        #TODO: Why doesn't it work if i call move = [x for x...] in the line above?
-
-    move = legal_move
-    piece = str(move[4]) + ',' + str(move[5])
-    move = [(move[0], move[1]), (move[2], move[3])]
-
-    return move, piece
-
 def handle_check(position, colour, move_num):
     game_over = True
-    alm_dict = {}
+    alm_list, alm_points_list = [], []
 
-    possible_moves = compute_legal_moves(position, colour, 0, move_num)
+    possible_moves = calculate_next_move(position, colour, 1, 1, move_num)
 
     temp_position = position.copy()
 
@@ -339,7 +390,8 @@ def handle_check(position, colour, move_num):
 
         for legal_move in possible_moves:
 
-            move, piece = try_blocking_check(legal_move)
+            move = legal_move[0:2]
+            piece = position[move[0][0]][move[0][1]]
             st_pos, end_pos = move[0], move[1]
             temp_position = updatepos(position, st_pos, end_pos, colour, piece)
             if not is_in_check(temp_position, colour, move_num):
@@ -348,12 +400,17 @@ def handle_check(position, colour, move_num):
                 points_w, points_b = calc_points(temp_position, move_num)
                 points = points_b - points_w
 
-                alm_dict.update({legal_move:points})
+                alm_list.append(move)
+                alm_points_list.append(points)
 
-    #For now if there is more than one max it just takes the first occurrence.
-    #TODO: Modify to get best move based on other parameters (position, strategy...)
-    move_to_do = max(alm_dict, key=alm_dict.get)
-    move, piece = move, piece = try_blocking_check(move_to_do)
+    #TODO: Here it only looks one move ahead, so it always captures if possible. Of course,
+    #it is not always the best move, especially when one is in check (for now if there is a mate
+    #in 2 where the first move is the computer taking a piece, and it could easily be avoided by
+    #not taking, the computer will always take because it only "sees" one move ahead)
+    move_to_do = [i for i, val in enumerate(alm_points_list) if val == max(alm_points_list)]
+    move = alm_list[random.choice(move_to_do)]
+
+    piece = position[move[0][0]][move[0][1]]
 
     if game_over:
         if colour == 0:

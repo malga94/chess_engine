@@ -207,7 +207,7 @@ def queen_move(position, st_pos, end_pos, colour, turn):
 def king_move(position, st_pos, end_pos, colour, turn):
 
     global w_king_moved, b_king_moved, w_rook1_moved, w_rook2_moved, b_rook1_moved, b_rook2_moved
-    
+
     x_st, y_st = st_pos[1], st_pos[0]
     x_end, y_end = end_pos[1], end_pos[0]
 
@@ -310,6 +310,7 @@ def pawn_move(position, st_pos, end_pos, colour, turn):
 
     if colour == 1:
         if position[y_st][x_st] != "b,p":
+            print(f"Position: {y_st}{x_st}, \n{position}")
             print("Error: there is a bug in the code. Please write a mail to filippo.malgarini@gmail.com with a screenshot of the position and the move you just tried to play")
             return False
         if position[y_end][x_end][0] == 'b': #The arrival position has a white piece on it

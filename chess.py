@@ -20,6 +20,8 @@ def main():
 
     if load.lower() == 'y':
         game_num = input("Which game would you like to load: ")
+        if game_num.lower() == 'q':
+            exit()
         try:
             game_num = int(game_num)
             initial_pos = load_starting_position(game_num)

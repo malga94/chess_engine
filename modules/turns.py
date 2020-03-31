@@ -117,22 +117,27 @@ def computer_turn(position, depth, move_num):
         move, piece = handle_check(position, colour, move_num)
 
     else:
-        if depth == 1:
-            possible_moves = compute_legal_moves(position, colour, 0, move_num)
-            move, piece = prepare_move_depth_1(possible_moves, -1)
 
-        elif depth == 2:
-            #possible_moves = compute_legal_moves(position, colour, 1, move_num)
-            possible_moves = compute_legal_moves(position, colour, 1, move_num)
-            move, piece = prepare_move_depth_2(possible_moves, position)
+        if 1 <= depth < 4:
+            possible_moves = calculate_next_move(position, colour, depth, depth, move_num)
+            # for moves in possible_moves:
+            #     if moves[3] == 3:
+            #         print(moves)
+            #     elif moves[3] == 1 and moves[4] > 2:
+            #         print(moves)
+            move = choose_best_move(possible_moves, depth)
+            print('\n', move)
+            piece = position[move[0][0]][move[0][1]]
 
         else:
             print("Warning: depth {0} not implemented yet. Using depth = 2".format(depth))
-            possible_moves = compute_legal_moves(position, colour, 1, move_num)
-            move, piece = prepare_move_depth_2(possible_moves, position)
+            possible_moves = calculate_next_move(position, colour, 2, 2, move_num)
+
+            move = choose_best_move(possible_moves, 2)
+            piece = position[move[0][0]][move[0][1]]
 
     st_pos, end_pos = move[0], move[1]
-    #Because of how compute_legal_moves works, at this point the chosen move is certainly valid.
+    #Because of how calculate_next_move works, at this point the chosen move is certainly valid.
     #Still, it is necessary to call check_move with flag 0 so that the global variable b_king_moved
     #in legal_moves.py can be changed to True when the black king is moved, and the computer can
     #be prevented from illegally castling
