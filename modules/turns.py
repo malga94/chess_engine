@@ -120,13 +120,8 @@ def computer_turn(position, depth, move_num):
 
         if 1 <= depth < 4:
             possible_moves = calculate_next_move(position, colour, depth, depth, move_num)
-            # for moves in possible_moves:
-            #     if moves[3] == 3:
-            #         print(moves)
-            #     elif moves[3] == 1 and moves[4] > 2:
-            #         print(moves)
             move = choose_best_move(possible_moves, depth)
-            print('\n', move)
+
             piece = position[move[0][0]][move[0][1]]
 
         else:

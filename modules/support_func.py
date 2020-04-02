@@ -339,14 +339,6 @@ def choose_best_move(possible_moves, depth):
             temp.append(min(dict.items(), key=lambda x: x[1]))
 
         #Here we need to extract all positions in the temp list where the points are maximum
-        for i, val in enumerate(temp):
-            print(possible_moves[val[0]])
-            print(best_move[i])
-            for index in reversed(indexes[depth-1]):
-                if val[0] > index:
-                    print(possible_moves[index])
-                    print("\n")
-                    break
         best_move_pos = extract_max_list_of_tuples(temp)
 
     for index in reversed(indexes[depth-1]):
@@ -386,22 +378,20 @@ def handle_check(position, colour, move_num):
 
     temp_position = position.copy()
 
-    if is_in_check(temp_position, colour, move_num):
+    for legal_move in possible_moves:
 
-        for legal_move in possible_moves:
+        move = legal_move[0:2]
+        piece = position[move[0][0]][move[0][1]]
+        st_pos, end_pos = move[0], move[1]
+        temp_position = updatepos(position, st_pos, end_pos, colour, piece)
+        if not is_in_check(temp_position, colour, move_num):
+            game_over = False
 
-            move = legal_move[0:2]
-            piece = position[move[0][0]][move[0][1]]
-            st_pos, end_pos = move[0], move[1]
-            temp_position = updatepos(position, st_pos, end_pos, colour, piece)
-            if not is_in_check(temp_position, colour, move_num):
-                game_over = False
+            points_w, points_b = calc_points(temp_position, move_num)
+            points = points_b - points_w
 
-                points_w, points_b = calc_points(temp_position, move_num)
-                points = points_b - points_w
-
-                alm_list.append(move)
-                alm_points_list.append(points)
+            alm_list.append(move)
+            alm_points_list.append(points)
 
     #TODO: Here it only looks one move ahead, so it always captures if possible. Of course,
     #it is not always the best move, especially when one is in check (for now if there is a mate

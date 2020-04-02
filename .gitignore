@@ -1,4 +1,8 @@
 NOUPLOAD
 *.pyc
 saved_games
-
+env
+qtpics.py
+graphical_interface.py
+popup.py
+*.ui
